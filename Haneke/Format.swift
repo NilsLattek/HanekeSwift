@@ -14,20 +14,24 @@ public struct Format<T> {
     
     public let diskCapacity : UInt64
     
-    public var transform : ((T) -> (T))?
+    public var transform : ((T, key: String?) -> (T))?
     
     public var convertToData : (T -> NSData)?
-
-    public init(name : String, diskCapacity : UInt64 = UINT64_MAX, transform : ((T) -> (T))? = nil) {
+    
+    public init(name : String, diskCapacity : UInt64 = UINT64_MAX, transform : ((T, key: String?) -> (T))? = nil) {
         self.name = name
         self.diskCapacity = diskCapacity
         self.transform = transform
     }
     
     public func apply(value : T) -> T {
+        return apply(value, key: nil)
+    }
+    
+    public func apply(value : T, key: String?) -> T {
         var transformed = value
         if let transform = self.transform {
-            transformed = transform(value)
+            transformed = transform(value, key: key)
         }
         return transformed
     }

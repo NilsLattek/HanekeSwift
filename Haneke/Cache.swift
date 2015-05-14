@@ -63,7 +63,7 @@ public class Cache<T : DataConvertible where T.Result == T, T : DataRepresentabl
     
     public func set(#value : T, key: String, formatName : String = HanekeGlobals.Cache.OriginalFormatName, success succeed : ((T) -> ())? = nil) {
         if let (format, memoryCache, diskCache) = self.formats[formatName] {
-            self.format(value: value, format: format) { formattedValue in
+            self.format(value: value, format: format, key: key) { formattedValue in
                 let wrapper = ObjectWrapper(value: formattedValue)
                 memoryCache.setObject(wrapper, forKey: key)
                 // Value data is sent as @autoclosure to be executed in the disk cache queue.
@@ -218,13 +218,13 @@ public class Cache<T : DataConvertible where T.Result == T, T : DataRepresentabl
         }
     }
     
-    private func format(#value : T, format : Format<T>, success succeed : (T) -> ()) {
+    private func format(#value : T, format : Format<T>, key: String, success succeed : (T) -> ()) {
         // HACK: Ideally Cache shouldn't treat images differently but I can't think of any other way of doing this that doesn't complicate the API for other types.
         if format.isIdentity && !(value is UIImage) {
             succeed(value)
         } else {
             dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0)) {
-                var formatted = format.apply(value)
+                var formatted = format.apply(value, key: key)
                 
                 if let formattedImage = formatted as? UIImage {
                     let originalImage = value as? UIImage

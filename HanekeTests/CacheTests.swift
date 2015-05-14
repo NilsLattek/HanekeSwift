@@ -371,6 +371,39 @@ class CacheTests: XCTestCase {
         XCTAssertFalse(fetch.hasFailed)
     }
     
+    func testFetch_WithFetcherAndCustomFormat_ExpectKeyAsSecondArgument () {
+        let key = self.name
+        let data = NSData.dataWithLength(12)
+        let formattedData = NSData.dataWithLength(13)
+        let fetcher = SimpleFetcher<NSData>(key: key, value: data)
+        var keyFromClosure: String? = nil
+        let format = Format<NSData>(name: self.name, transform: { (result, key) in
+            keyFromClosure = key
+            return formattedData
+        })
+        sut.addFormat(format)
+        let expectation = self.expectationWithDescription(self.name)
+        
+        let fetch = sut.fetch(fetcher: fetcher, formatName : format.name, failure : { _ in
+            XCTFail("expected sucesss")
+            expectation.fulfill()
+            }) {
+                XCTAssertTrue($0 === formattedData)
+                expectation.fulfill()
+        }
+        
+        XCTAssertFalse(fetch.hasSucceeded)
+        XCTAssertFalse(fetch.hasFailed)
+        self.waitForExpectationsWithTimeout(1, handler: nil)
+        XCTAssertTrue(fetch.hasSucceeded)
+        XCTAssertFalse(fetch.hasFailed)
+        if let keyFromClosure = keyFromClosure {
+            XCTAssertEqual(keyFromClosure, key)
+        } else {
+            XCTAssert(false, "No key provided")
+        }
+    }
+    
     func testFetch_WithFetcherAndInexistingFormat_ExpectSyncFailure () {
         let expectation = self.expectationWithDescription(self.name)
         let data = NSData.dataWithLength(14)
